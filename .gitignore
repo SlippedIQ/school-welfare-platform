@@ -1,0 +1,26 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+
+# SQLite database + generated client
+prisma/dev.db
+prisma/dev.db-journal
+src/generated/
+
+# Tunnel binary + logs (downloaded by scripts/go-live.ps1 setup)
+tools/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs & editor
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.vscode/
+.idea/

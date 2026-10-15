@@ -1,0 +1,95 @@
+// School Welfare Platform — Prisma schema (PostgreSQL in production via Neon,
+// and for local development against the same database).
+//
+// Enum-backed fields (stressLevel, state, severity) are stored as strings and
+// constrained at the application layer by the Zod schemas in
+// src/lib/validation.ts and the union types in src/lib/types.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id                String        @id @default(cuid())
+  admissionNo       String        @unique
+  fullName          String
+  gradeClass        String
+  age               Int
+  guardianContact   String
+  baselineHeartRate Int
+  classroomId       String?
+  classroom         Classroom?    @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  biometricLogs     BiometricLog[]
+  alerts            AlertLog[]
+  observations      Observation[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([gradeClass])
+  @@index([classroomId])
+}
+
+model BiometricLog {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  timestamp   DateTime @default(now())
+  heartRate   Int
+  stressLevel String // LOW | MODERATE | HIGH
+  state       String // FOCUSED | ACTIVE | SLEEPY | ANXIOUS
+  bodyTemp    Float
+
+  @@index([studentId, timestamp])
+}
+
+model Classroom {
+  id        String    @id @default(cuid())
+  className String    @unique
+  nasId     String
+  streamUrl String
+  students  Student[]
+  teachers  Teacher[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([nasId])
+}
+
+model Teacher {
+  id              String      @id @default(cuid())
+  name            String
+  email           String      @unique
+  assignedClasses Classroom[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model AlertLog {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  severity  String // WARNING | CRITICAL
+  message   String
+  timestamp DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  @@index([isRead, timestamp])
+  @@index([severity])
+}
+
+model Observation {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId  String?
+  authorName String
+  note       String
+  createdAt  DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}

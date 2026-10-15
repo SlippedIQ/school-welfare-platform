@@ -1,0 +1,18 @@
+# Render Blueprint: provisions the free web service that hosts the platform.
+# The DATABASE_URL environment variable is intentionally not committed here —
+# set it in the Render dashboard (use the Neon *pooler* connection string).
+services:
+  - type: web
+    name: school-welfare-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SIM_TICK_MS
+        value: "4000"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=768"
