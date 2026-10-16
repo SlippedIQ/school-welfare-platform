@@ -1,8 +1,17 @@
 'use client';
 
-import { useLiveFeed, useNow } from '@/hooks/use-live-feed';
+import { useNow } from '@/hooks/use-live-feed';
+import { api } from '@/lib/client';
 import { relativeTime } from '@/lib/format';
+import type { LiveMetrics } from '@/lib/types';
 import { Cctv, HeartPulse, Radio, ShieldAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface StatusPayload {
+  metrics: LiveMetrics;
+  seq: number;
+  updatedAt: string;
+}
 
 interface MetricProps {
   icon: React.ReactNode;
@@ -19,12 +28,36 @@ const toneStyles = {
   danger: 'text-rose-600',
 };
 
-/** Entry-page status strip backed by the live simulation snapshot. */
+/**
+ * Entry-page status strip. Polls the public aggregate endpoint — the payload
+ * carries counts only, never student-identifying data.
+ */
 export function SystemStatusStrip() {
-  const { snapshot, status } = useLiveFeed();
-  const now = useNow(5000);
+  const [status, setStatus] = useState<StatusPayload | null>(null);
+  const [online, setOnline] = useState(false);
+  const now = useNow(10_000);
 
-  const metrics = snapshot?.metrics;
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const payload = await api<StatusPayload>('/api/status');
+        if (!alive) return;
+        setStatus(payload);
+        setOnline(true);
+      } catch {
+        if (alive) setOnline(false);
+      }
+    };
+    void load();
+    const interval = setInterval(load, 10_000);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const metrics = status?.metrics;
 
   const items: MetricProps[] = [
     {
@@ -51,16 +84,13 @@ export function SystemStatusStrip() {
     {
       icon: <Radio className="h-4 w-4" />,
       label: 'Engine',
-      value:
-        status === 'live'
-          ? 'Streaming'
-          : status === 'polling'
-            ? 'Polling'
-            : status === 'offline'
-              ? 'Disconnected'
-              : 'Starting',
-      note: snapshot ? `seq #${snapshot.seq} · ${relativeTime(snapshot.updatedAt, now)}` : 'awaiting snapshot',
-      tone: status === 'live' ? 'success' : status === 'offline' ? 'danger' : 'default',
+      value: online ? 'Streaming' : status ? 'Disconnected' : 'Starting',
+      note: status
+        ? `seq #${status.seq} · ${relativeTime(status.updatedAt, now)}`
+        : online
+          ? 'awaiting snapshot'
+          : 'public status feed',
+      tone: online ? 'success' : 'danger',
     },
   ];
 

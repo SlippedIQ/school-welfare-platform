@@ -2,6 +2,7 @@ import { AlertsDock } from '@/components/live/alerts-dock';
 import { AdminOverview } from '@/components/admin/overview';
 import { AppShell } from '@/components/shell/app-shell';
 import { adminNavItems } from '@/components/shell/admin-nav';
+import { requirePageUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toClassroomDTO } from '@/lib/serialize';
 import type { Metadata } from 'next';
@@ -12,6 +13,8 @@ export const metadata: Metadata = { title: 'Admin Overview' };
 
 /** Admin portal landing page: school-wide metrics and hardware health. */
 export default async function AdminOverviewPage() {
+  const user = await requirePageUser(['ADMIN']);
+
   const [classrooms, studentCount] = await Promise.all([
     db.classroom.findMany({
       include: {
@@ -26,6 +29,7 @@ export default async function AdminOverviewPage() {
   return (
     <AppShell
       portal="admin"
+      user={{ displayName: user.displayName, role: user.role }}
       title="Overview"
       description="School-wide welfare, sensor and camera health"
       nav={adminNavItems()}

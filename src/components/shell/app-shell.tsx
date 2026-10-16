@@ -1,14 +1,17 @@
 'use client';
 
-import { cn } from '@/lib/cn';
-import { SCHOOL_NAME } from '@/lib/constants';
+import { FeedStatusPill } from '@/components/live/feed-status';
+import { Button } from '@/components/ui/button';
 import { useLiveFeed, useNow } from '@/hooks/use-live-feed';
+import { cn } from '@/lib/cn';
+import { api } from '@/lib/client';
+import { SCHOOL_NAME } from '@/lib/constants';
 import { formatClock } from '@/lib/format';
-import { Activity, ArrowLeftRight } from 'lucide-react';
+import { ROLE_LABELS, type UserRole } from '@/lib/types';
+import { Activity, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
-import { FeedStatusPill } from '@/components/live/feed-status';
+import { useState, type ReactNode } from 'react';
 
 export interface NavItem {
   label: string;
@@ -17,8 +20,15 @@ export interface NavItem {
   badge?: ReactNode;
 }
 
+/** Signed-in identity rendered in the shell chrome. */
+export interface ShellUser {
+  displayName: string;
+  role: UserRole;
+}
+
 interface AppShellProps {
-  portal: 'teacher' | 'admin';
+  portal: 'teacher' | 'admin' | 'nurse';
+  user: ShellUser;
   title: string;
   description?: string;
   nav: NavItem[];
@@ -28,16 +38,68 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+const portalLabels: Record<AppShellProps['portal'], string> = {
+  teacher: 'Teaching',
+  admin: 'Master control',
+  nurse: 'Nursing',
+};
+
+function initialsOf(displayName: string): string {
+  return displayName
+    .split(/\s+/)
+    .map((word) => word[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+/** Signs out via the API, then hard-navigates to /login (clears all RSC state). */
+function SignOutButton({ compact = false }: { compact?: boolean }) {
+  const [busy, setBusy] = useState(false);
+
+  async function signOut() {
+    setBusy(true);
+    try {
+      await api('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Session may already be gone — either way we land on /login.
+    }
+    window.location.assign('/login');
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={signOut}
+      disabled={busy}
+      title="Sign out"
+      aria-label="Sign out"
+      icon={<LogOut className="h-3.5 w-3.5" />}
+    >
+      {compact ? null : 'Sign out'}
+    </Button>
+  );
+}
+
 /**
- * Shared chrome for both portals: fixed sidebar (with a compact mobile nav),
- * top bar with live-feed status and a clock, and a scrollable content area.
+ * Shared chrome for all portals: fixed sidebar (with a compact mobile nav),
+ * top bar with identity, live-feed status and a clock, and a scrollable
+ * content area.
  */
-export function AppShell({ portal, title, description, nav, actions, children }: AppShellProps) {
+export function AppShell({
+  portal,
+  user,
+  title,
+  description,
+  nav,
+  actions,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const now = useNow(1000);
   const { snapshot } = useLiveFeed();
-
-  const otherPortal = portal === 'teacher' ? { href: '/admin', label: 'Admin Control' } : { href: '/teacher', label: 'Teacher Portal' };
 
   return (
     <div className="flex min-h-screen bg-surface-muted">
@@ -57,7 +119,7 @@ export function AppShell({ portal, title, description, nav, actions, children }:
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 scroll-thin">
           <p className="px-2 pb-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-ink-faint">
-            {portal === 'teacher' ? 'Teaching' : 'Master control'}
+            {portalLabels[portal]}
           </p>
           {nav.map((item) => {
             const active = pathname === item.href;
@@ -83,14 +145,21 @@ export function AppShell({ portal, title, description, nav, actions, children }:
         </nav>
 
         <div className="border-t border-line p-2">
-          <Link
-            href={otherPortal.href}
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-          >
-            <ArrowLeftRight className="h-4 w-4 text-ink-faint" />
-            {otherPortal.label}
-          </Link>
-          <p className="px-2 pb-1 pt-2 text-2xs text-ink-faint">
+          <div className="flex items-center gap-2.5 px-2 py-1.5">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-2xs font-semibold text-ink-muted">
+              {initialsOf(user.displayName)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium text-ink">
+                {user.displayName}
+              </span>
+              <span className="block truncate text-2xs text-ink-faint">
+                {ROLE_LABELS[user.role]}
+              </span>
+            </span>
+          </div>
+          <SignOutButton />
+          <p className="px-2 pb-1 pt-1 text-2xs text-ink-faint">
             Sensor cadence {snapshot ? 'live' : 'idle'} · demo build
           </p>
         </div>
@@ -112,6 +181,9 @@ export function AppShell({ portal, title, description, nav, actions, children }:
                 {formatClock(now)}
               </span>
               <FeedStatusPill />
+              <span className="md:hidden">
+                <SignOutButton compact />
+              </span>
             </div>
           </div>
 
@@ -135,13 +207,6 @@ export function AppShell({ portal, title, description, nav, actions, children }:
                 </Link>
               );
             })}
-            <Link
-              href={otherPortal.href}
-              className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs text-ink-faint"
-            >
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-              {otherPortal.label}
-            </Link>
           </nav>
         </header>
 

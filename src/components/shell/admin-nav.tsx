@@ -1,5 +1,5 @@
 import { UnreadAlertBadge } from '@/components/live/unread-badge';
-import { Cctv, GraduationCap, LayoutGrid, ScrollText, UserCog } from 'lucide-react';
+import { Cctv, GraduationCap, LayoutGrid, ScanFace, ScrollText, UserCog } from 'lucide-react';
 
 /** Sidebar navigation for the admin portal (server-rendered per page). */
 export function adminNavItems() {
@@ -29,6 +29,11 @@ export function adminNavItems() {
       label: 'Audit log',
       href: '/admin/audit',
       icon: <ScrollText className="h-4 w-4" />,
+    },
+    {
+      label: 'Camera vitals',
+      href: '/scan',
+      icon: <ScanFace className="h-4 w-4" />,
     },
   ];
 }

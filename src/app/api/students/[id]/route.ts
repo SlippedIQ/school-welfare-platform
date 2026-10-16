@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { deriveSection } from '@/lib/format';
 import { toBiometricPoint, toObservationDTO, toStudentDTO } from '@/lib/serialize';
 import { syncEngineRoster } from '@/lib/sim/sync';
@@ -16,6 +17,9 @@ type Params = { params: { id: string } };
  * power the teacher observation modal.
  */
 export async function GET(_request: NextRequest, { params }: Params) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const student = await db.student.findUnique({
       where: { id: params.id },
@@ -48,6 +52,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
 }
 
 export async function PUT(request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, studentInputSchema);
   if (parsed.error) return parsed.error;
 
@@ -95,6 +102,9 @@ export async function PUT(request: Request, { params }: Params) {
 
 /** Hard delete; biometric logs, alerts and notes cascade. */
 export async function DELETE(_request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   try {
     await db.student.delete({ where: { id: params.id } });
     await syncEngineRoster();

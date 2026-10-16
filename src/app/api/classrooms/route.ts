@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toClassroomDTO } from '@/lib/serialize';
 import { syncEngineRoster } from '@/lib/sim/sync';
 import { classroomInputSchema } from '@/lib/validation';
@@ -14,6 +15,9 @@ const classroomInclude = {
 
 /** Lists classrooms with student counts and assigned teacher ids. */
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const classrooms = await db.classroom.findMany({
       include: classroomInclude,
@@ -27,6 +31,9 @@ export async function GET() {
 
 /** Links a new class/section to its NAS identifier and stream gateway path. */
 export async function POST(request: Request) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, classroomInputSchema);
   if (parsed.error) return parsed.error;
 

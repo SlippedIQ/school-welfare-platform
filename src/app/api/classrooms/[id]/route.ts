@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toClassroomDTO } from '@/lib/serialize';
 import { syncEngineRoster } from '@/lib/sim/sync';
 import { classroomInputSchema } from '@/lib/validation';
@@ -16,6 +17,9 @@ const classroomInclude = {
 
 /** Updates the NAS mapping / stream path for a class. */
 export async function PUT(request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, classroomInputSchema);
   if (parsed.error) return parsed.error;
 
@@ -37,6 +41,9 @@ export async function PUT(request: Request, { params }: Params) {
  * protected by a referential constraint and return an actionable 409.
  */
 export async function DELETE(_request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   try {
     const studentCount = await db.student.count({ where: { classroomId: params.id } });
     if (studentCount > 0) {

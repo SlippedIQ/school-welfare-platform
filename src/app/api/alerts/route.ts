@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toAlertDTO } from '@/lib/serialize';
 import { getEngine } from '@/lib/sim/engine';
 import { alertPatchSchema, auditQuerySchema } from '@/lib/validation';
@@ -10,6 +11,9 @@ export const runtime = 'nodejs';
 
 /** Global alert feed with optional severity/status/text filters. */
 export async function GET(request: NextRequest) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const params = Object.fromEntries(request.nextUrl.searchParams.entries());
   const parsed = auditQuerySchema.safeParse(params);
   if (!parsed.success) {
@@ -49,6 +53,9 @@ export async function GET(request: NextRequest) {
 
 /** Marks specific alerts (or all of them) as read across every client. */
 export async function PATCH(request: Request) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, alertPatchSchema);
   if (parsed.error) return parsed.error;
 

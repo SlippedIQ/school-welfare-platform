@@ -2,6 +2,7 @@ import { AlertsDock } from '@/components/live/alerts-dock';
 import { ClassroomsManager } from '@/components/admin/classrooms-manager';
 import { AppShell } from '@/components/shell/app-shell';
 import { adminNavItems } from '@/components/shell/admin-nav';
+import { requirePageUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toClassroomDTO } from '@/lib/serialize';
 import type { Metadata } from 'next';
@@ -12,6 +13,8 @@ export const metadata: Metadata = { title: 'Classrooms & Cameras' };
 
 /** Admin page: NAS / camera routing per section. */
 export default async function AdminClassroomsPage() {
+  const user = await requirePageUser(['ADMIN']);
+
   const classrooms = await db.classroom.findMany({
     include: {
       _count: { select: { students: true } },
@@ -23,6 +26,7 @@ export default async function AdminClassroomsPage() {
   return (
     <AppShell
       portal="admin"
+      user={{ displayName: user.displayName, role: user.role }}
       title="Classrooms & cameras"
       description="Map each section to its NAS identifier and stream gateway"
       nav={adminNavItems()}

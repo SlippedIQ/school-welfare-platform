@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toTeacherDTO } from '@/lib/serialize';
 import { teacherInputSchema } from '@/lib/validation';
 
@@ -14,6 +15,9 @@ const teacherInclude = {
 
 /** Updates a teacher and replaces their section assignments wholesale. */
 export async function PUT(request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, teacherInputSchema);
   if (parsed.error) return parsed.error;
 
@@ -38,6 +42,9 @@ export async function PUT(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   try {
     await db.teacher.delete({ where: { id: params.id } });
     return jsonOk({ id: params.id });

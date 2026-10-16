@@ -1,3 +1,4 @@
+import { requireApiUser } from '@/lib/auth';
 import { getEngine } from '@/lib/sim/engine';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,9 @@ const HEARTBEAT_MS = 15_000;
  * containing the full `LiveSnapshot`; `snapshot` is sent once on connect.
  */
 export async function GET(request: Request) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const engine = getEngine();
   // If the database is not migrated yet the engine still serves in-memory
   // (empty) state and recovers on a later tick.

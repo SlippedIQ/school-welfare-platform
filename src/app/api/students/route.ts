@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { deriveSection } from '@/lib/format';
 import { toStudentDTO } from '@/lib/serialize';
 import { syncEngineRoster } from '@/lib/sim/sync';
@@ -14,6 +15,9 @@ const studentInclude = {
 
 /** Lists every student with their section metadata. */
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const students = await db.student.findMany({
       include: studentInclude,
@@ -27,6 +31,9 @@ export async function GET() {
 
 /** Creates a student, deriving the section label from the linked classroom. */
 export async function POST(request: Request) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, studentInputSchema);
   if (parsed.error) return parsed.error;
 

@@ -26,6 +26,8 @@ import { useEffect, useState } from 'react';
 interface StudentModalProps {
   student: StudentDTO | null;
   teacher: TeacherDTO | null;
+  /** Overrides the note author (e.g. the signed-in nurse); defaults to the teacher. */
+  authorName?: string;
   onClose: () => void;
 }
 
@@ -35,7 +37,7 @@ interface StudentDetail {
 }
 
 /** Quick health trends plus timestamped observation notes for one student. */
-export function StudentModal({ student, teacher, onClose }: StudentModalProps) {
+export function StudentModal({ student, teacher, authorName, onClose }: StudentModalProps) {
   const toast = useToast();
   const live = useLiveStudent(student?.id);
 
@@ -83,7 +85,7 @@ export function StudentModal({ student, teacher, onClose }: StudentModalProps) {
         body: JSON.stringify({
           studentId: student.id,
           teacherId: teacher?.id ?? null,
-          authorName: teacher?.name ?? 'Staff',
+          authorName: authorName ?? teacher?.name ?? 'Staff',
           note: note.trim(),
         }),
       });

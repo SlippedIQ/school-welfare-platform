@@ -9,6 +9,10 @@ prisma/dev.db
 prisma/dev.db-journal
 src/generated/
 
+# MediaPipe wasm runtime (regenerated from node_modules by postinstall;
+# only the face_landmarker model in public/models is committed)
+public/vision/
+
 # Tunnel binary + logs (downloaded by scripts/go-live.ps1 setup)
 tools/
 

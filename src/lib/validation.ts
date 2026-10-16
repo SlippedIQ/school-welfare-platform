@@ -105,6 +105,11 @@ export const auditQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).optional(),
 });
 
+export const loginSchema = z.object({
+  username: z.string().trim().min(3, 'Enter your username').max(32),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(128),
+});
+
 /** Enum guards used by the simulation engine when it writes to the DB. */
 export const stressLevelSchema = z.enum(STRESS_LEVELS);
 export const bioStateSchema = z.enum(BIO_STATES);

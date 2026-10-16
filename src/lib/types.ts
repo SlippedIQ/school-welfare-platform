@@ -15,6 +15,20 @@ export type BioState = (typeof BIO_STATES)[number];
 export const SEVERITIES = ['WARNING', 'CRITICAL'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
+export const USER_ROLES = ['ADMIN', 'TEACHER', 'NURSE'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Administrator',
+  TEACHER: 'Teacher',
+  NURSE: 'Nurse',
+};
+
+/** Narrows an untrusted string (e.g. a DB column) to UserRole. */
+export function isUserRole(value: string): value is UserRole {
+  return (USER_ROLES as readonly string[]).includes(value);
+}
+
 /** Display labels for enum values (kept out of components so copy stays consistent). */
 export const STATE_LABELS: Record<BioState, string> = {
   FOCUSED: 'Focused',

@@ -67,6 +67,7 @@ model Teacher {
   name            String
   email           String      @unique
   assignedClasses Classroom[]
+  users           User[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
@@ -94,4 +95,30 @@ model Observation {
   createdAt  DateTime @default(now())
 
   @@index([studentId, createdAt])
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  displayName  String
+  role         String // ADMIN | TEACHER | NURSE
+  passwordHash String
+  teacherId    String?
+  teacher      Teacher?  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
 }

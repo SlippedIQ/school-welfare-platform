@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toTeacherDTO } from '@/lib/serialize';
 import { teacherInputSchema } from '@/lib/validation';
 
@@ -12,6 +13,9 @@ const teacherInclude = {
 
 /** Lists teachers with their assigned sections. */
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   try {
     const teachers = await db.teacher.findMany({
       include: teacherInclude,
@@ -25,6 +29,9 @@ export async function GET() {
 
 /** Provisions a teacher account with initial section assignments. */
 export async function POST(request: Request) {
+  const auth = await requireApiUser(['ADMIN']);
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, teacherInputSchema);
   if (parsed.error) return parsed.error;
 

@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { jsonError, jsonOk, parseBody, prismaErrorResponse } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { toObservationDTO } from '@/lib/serialize';
 import { getEngine } from '@/lib/sim/engine';
 import { observationInputSchema } from '@/lib/validation';
@@ -10,6 +11,9 @@ export const runtime = 'nodejs';
 
 /** Latest observation notes for a student (`?studentId=...`). */
 export async function GET(request: NextRequest) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const studentId = request.nextUrl.searchParams.get('studentId');
   if (!studentId) return jsonError('studentId query parameter is required', 422);
 
@@ -27,6 +31,9 @@ export async function GET(request: NextRequest) {
 
 /** Appends a timestamped observation note for a student. */
 export async function POST(request: Request) {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const parsed = await parseBody(request, observationInputSchema);
   if (parsed.error) return parsed.error;
 

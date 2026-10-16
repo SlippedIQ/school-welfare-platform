@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonOk } from '@/lib/api';
+import { requireApiUser } from '@/lib/auth';
 import { getEngine } from '@/lib/sim/engine';
 import type { LiveSnapshot } from '@/lib/types';
 
@@ -11,6 +12,9 @@ export const runtime = 'nodejs';
  * fallback transport (short polling) when the event stream is unavailable.
  */
 export async function GET() {
+  const auth = await requireApiUser();
+  if (auth.error) return auth.error;
+
   const engine = getEngine();
   try {
     await engine.ensureReady();

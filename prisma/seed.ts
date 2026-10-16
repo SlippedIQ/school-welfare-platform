@@ -1,11 +1,13 @@
 /**
- * Seeds the local SQLite database with classrooms, camera/NAS mappings,
- * teachers, students, baseline biometric history, a few alerts and
- * observation notes so both portals are populated on first run.
+ * Seeds the PostgreSQL database with classrooms, camera/NAS mappings,
+ * teachers, students, baseline biometric history, a few alerts,
+ * observation notes and demo login users so both portals are populated
+ * on first run.
  *
  * Run with: npm run db:seed
  */
 import { PrismaClient } from '@prisma/client';
+import { seedDemoUsers } from './demo-users';
 
 const prisma = new PrismaClient();
 
@@ -182,8 +184,10 @@ async function main() {
     ],
   });
 
+  const usernames = await seedDemoUsers(prisma);
+
   console.log(
-    `Seeded ${classrooms.length} classrooms, 3 teachers, ${students.length} students, 3 alerts, 2 observations.`,
+    `Seeded ${classrooms.length} classrooms, 3 teachers, ${students.length} students, 3 alerts, 2 observations, ${usernames.length} login users.`,
   );
 }
 
